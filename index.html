@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>3D Soft Engine using HTML5 Canvas</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no' />
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+    <script src="dist/bundle.js"></script>
+</head>
+<body>
+    <canvas id="frontBuffer" style="background-color: black;"></canvas>
+    <script type="text/javascript">
+    var canvas = document.getElementById('frontBuffer');
+
+    window.addEventListener('resize', resizeCanvas, false);
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    </script>
+</body>
+</html>
