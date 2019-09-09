@@ -16,7 +16,7 @@ module Soft3D {
             return this;
         }
 
-        sub(other: Vector3): Vector3 {
+        subtract(other: Vector3): Vector3 {
             this.x -= other.x;
             this.y -= other.y;
             this.z -= other.z;
@@ -77,7 +77,7 @@ module Soft3D {
             return res;
         }
 
-        static Sub(a: Vector3, b: Vector3): Vector3 {
+        static Subtract(a: Vector3, b: Vector3): Vector3 {
             var res = new Vector3(0, 0, 0);
             res.x = a.x - b.x;
             res.y = a.y - b.y;

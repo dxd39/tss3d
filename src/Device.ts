@@ -82,6 +82,24 @@ namespace Soft3D {
             }
         }
 
+        public drawLine(point0: Vector2, point1: Vector2): void {
+            
+            // If the distance between the 2 points is less than 2 pixels
+            // We're exiting
+            if (Vector2.Distance(point0, point1) < 2) {
+                return;
+            }
+
+            // Find the middle point between first & second point
+            var middlePoint = new Vector2(point0.x, point0.y).add(point1).scale(0.5);
+            // We draw this point on screen
+            this.drawPoint(middlePoint);
+            // Recursive algorithm launched between first & middle point
+            // and between middle & second point
+            this.drawLine(point0, middlePoint);
+            this.drawLine(middlePoint, point1);
+        }
+
         // The main method of the engine that re-compute each vertex projection
         // during each frame
         public render(camera: Camera, meshes: Mesh[]): void {
@@ -101,11 +119,24 @@ namespace Soft3D {
 
                 var transformMatrix = projectionMatrix.multiply(viewMatrix).multiply(worldMatrix); //！！左乘
 
-                for (var indexVertices = 0; indexVertices < cMesh.vertices.length; indexVertices++) {
-                    // First, we project the 3D coordinates into the 2D space
-                    var projectedPoint = this.project(cMesh.vertices[indexVertices], transformMatrix);
-                    // Then we can draw on screen
-                    this.drawPoint(projectedPoint);
+                // for (var indexVertices = 0; indexVertices < cMesh.vertices.length; indexVertices++) {
+                //     // First, we project the 3D coordinates into the 2D space
+                //     var projectedPoint = this.project(cMesh.vertices[indexVertices], transformMatrix);
+                //     // Then we can draw on screen
+                //     this.drawPoint(projectedPoint);
+                // }
+                for (let i = 0; i < cMesh.indices.length; ++i) {
+                    var vertexA = cMesh.vertices[cMesh.indices[i]];
+                    var vertexB = cMesh.vertices[cMesh.indices[++i]];
+                    var vertexC = cMesh.vertices[cMesh.indices[++i]];
+
+                    var pixelA = this.project(vertexA, transformMatrix);
+                    var pixelB = this.project(vertexB, transformMatrix);
+                    var pixelC = this.project(vertexC, transformMatrix);
+
+                    this.drawLine(pixelA, pixelB);
+                    this.drawLine(pixelB, pixelC);
+                    this.drawLine(pixelC, pixelA);
                 }
             }
         }

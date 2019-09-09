@@ -58,7 +58,7 @@ module Soft3D {
 
         setLookAt(eye: Vector3, target: Vector3, up: Vector3): Matrix4 {
             let y = new Vector3(up.x, up.y, up.z).normalize();
-            let z = Vector3.Sub(eye, target).normalize();
+            let z = Vector3.Subtract(eye, target).normalize();
             let x = Vector3.Cross(y, z).normalize();            
             y = Vector3.Cross(z, x);
 

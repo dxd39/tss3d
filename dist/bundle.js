@@ -130,6 +130,21 @@ var Soft3D;
                 this.putPixel(point.x, point.y, new Soft3D.Color(1, 1, 0, 1));
             }
         };
+        Device.prototype.drawLine = function (point0, point1) {
+            // If the distance between the 2 points is less than 2 pixels
+            // We're exiting
+            if (Soft3D.Vector2.Distance(point0, point1) < 2) {
+                return;
+            }
+            // Find the middle point between first & second point
+            var middlePoint = new Soft3D.Vector2(point0.x, point0.y).add(point1).scale(0.5);
+            // We draw this point on screen
+            this.drawPoint(middlePoint);
+            // Recursive algorithm launched between first & middle point
+            // and between middle & second point
+            this.drawLine(point0, middlePoint);
+            this.drawLine(middlePoint, point1);
+        };
         // The main method of the engine that re-compute each vertex projection
         // during each frame
         Device.prototype.render = function (camera, meshes) {
@@ -145,11 +160,22 @@ var Soft3D;
                     .multiply(new Soft3D.Matrix4()
                     .setTranlate(cMesh.position.x, cMesh.position.y, cMesh.position.z));
                 var transformMatrix = projectionMatrix.multiply(viewMatrix).multiply(worldMatrix); //！！左乘
-                for (var indexVertices = 0; indexVertices < cMesh.vertices.length; indexVertices++) {
-                    // First, we project the 3D coordinates into the 2D space
-                    var projectedPoint = this.project(cMesh.vertices[indexVertices], transformMatrix);
-                    // Then we can draw on screen
-                    this.drawPoint(projectedPoint);
+                // for (var indexVertices = 0; indexVertices < cMesh.vertices.length; indexVertices++) {
+                //     // First, we project the 3D coordinates into the 2D space
+                //     var projectedPoint = this.project(cMesh.vertices[indexVertices], transformMatrix);
+                //     // Then we can draw on screen
+                //     this.drawPoint(projectedPoint);
+                // }
+                for (var i = 0; i < cMesh.indices.length; ++i) {
+                    var vertexA = cMesh.vertices[cMesh.indices[i]];
+                    var vertexB = cMesh.vertices[cMesh.indices[++i]];
+                    var vertexC = cMesh.vertices[cMesh.indices[++i]];
+                    var pixelA = this.project(vertexA, transformMatrix);
+                    var pixelB = this.project(vertexB, transformMatrix);
+                    var pixelC = this.project(vertexC, transformMatrix);
+                    this.drawLine(pixelA, pixelB);
+                    this.drawLine(pixelB, pixelC);
+                    this.drawLine(pixelC, pixelA);
                 }
             }
         };
@@ -215,7 +241,7 @@ var Soft3D;
         };
         Matrix4.prototype.setLookAt = function (eye, target, up) {
             var y = new Soft3D.Vector3(up.x, up.y, up.z).normalize();
-            var z = Soft3D.Vector3.Sub(eye, target).normalize();
+            var z = Soft3D.Vector3.Subtract(eye, target).normalize();
             var x = Soft3D.Vector3.Cross(y, z).normalize();
             y = Soft3D.Vector3.Cross(z, x);
             var m = this.data;
@@ -326,9 +352,10 @@ var Soft3D;
 var Soft3D;
 (function (Soft3D) {
     var Mesh = /** @class */ (function () {
-        function Mesh(name, verticesCount) {
+        function Mesh(name, verticesCount, facesCount) {
             this.name = name;
             this.vertices = new Array(verticesCount);
+            this.indices = new Array(facesCount);
             this.rotation = new Soft3D.Vector3(0, 0, 0);
             this.position = new Soft3D.Vector3(0, 0, 0);
         }
@@ -344,6 +371,21 @@ var Soft3D;
             this.data[0] = x;
             this.data[1] = y;
         }
+        Vector2.prototype.add = function (other) {
+            this.x += other.x;
+            this.y += other.y;
+            return this;
+        };
+        Vector2.prototype.subtract = function (other) {
+            this.x -= other.x;
+            this.y -= other.y;
+            return this;
+        };
+        Vector2.prototype.scale = function (scale) {
+            this.x *= scale;
+            this.y *= scale;
+            return this;
+        };
         Object.defineProperty(Vector2.prototype, "x", {
             get: function () {
                 return this.data[0];
@@ -364,6 +406,11 @@ var Soft3D;
             enumerable: true,
             configurable: true
         });
+        Vector2.Distance = function (a, b) {
+            var dx = a.x - b.x;
+            var dy = a.y - b.y;
+            return Math.sqrt(dx * dx + dy * dy);
+        };
         Vector2.ZERO = new Vector2(0, 0);
         Vector2.ONE = new Vector2(1, 1);
         return Vector2;
@@ -385,7 +432,7 @@ var Soft3D;
             this.z += other.z;
             return this;
         };
-        Vector3.prototype.sub = function (other) {
+        Vector3.prototype.subtract = function (other) {
             this.x -= other.x;
             this.y -= other.y;
             this.z -= other.z;
@@ -440,7 +487,7 @@ var Soft3D;
             res.z = a.z + b.z;
             return res;
         };
-        Vector3.Sub = function (a, b) {
+        Vector3.Subtract = function (a, b) {
             var res = new Vector3(0, 0, 0);
             res.x = a.x - b.x;
             res.y = a.y - b.y;
@@ -474,18 +521,32 @@ var mera;
 document.addEventListener("DOMContentLoaded", init, false);
 function init() {
     canvas = document.getElementById("frontBuffer");
-    mesh = new Soft3D.Mesh("Cube", 8);
+    mesh = new Soft3D.Mesh("Cube", 8, 12);
     meshes.push(mesh);
     mera = new Soft3D.Camera();
     device = new Soft3D.Device(canvas);
     mesh.vertices[0] = new Soft3D.Vector3(-1, 1, 1);
     mesh.vertices[1] = new Soft3D.Vector3(1, 1, 1);
     mesh.vertices[2] = new Soft3D.Vector3(-1, -1, 1);
-    mesh.vertices[3] = new Soft3D.Vector3(-1, -1, -1);
+    mesh.vertices[3] = new Soft3D.Vector3(1, -1, 1);
     mesh.vertices[4] = new Soft3D.Vector3(-1, 1, -1);
     mesh.vertices[5] = new Soft3D.Vector3(1, 1, -1);
-    mesh.vertices[6] = new Soft3D.Vector3(1, -1, 1);
-    mesh.vertices[7] = new Soft3D.Vector3(1, -1, -1);
+    mesh.vertices[6] = new Soft3D.Vector3(1, -1, -1);
+    mesh.vertices[7] = new Soft3D.Vector3(-1, -1, -1);
+    mesh.indices = [
+        0, 1, 2,
+        1, 2, 3,
+        1, 3, 6,
+        1, 5, 6,
+        0, 1, 4,
+        1, 4, 5,
+        2, 3, 7,
+        3, 6, 7,
+        0, 2, 7,
+        0, 4, 7,
+        4, 5, 6,
+        4, 6, 7
+    ];
     mera.position = new Soft3D.Vector3(0, 0, -10);
     mera.target = new Soft3D.Vector3(0, 0, 0);
     // Calling the HTML5 rendering loop
