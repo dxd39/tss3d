@@ -10,18 +10,24 @@ namespace Soft3D {
         // equals to backbuffer.data
         private backbufferdata: any;
 
-        constructor(canvas: HTMLCanvasElement) {
+        constructor(canvas: HTMLCanvasElement) {        
             this.workingCanvas = canvas;
-            this.workingWidth = canvas.width;
-            this.workingHeight = canvas.height;
+            this.workingWidth = window.innerWidth;
+            this.workingHeight = window.innerHeight;
+
+            this.workingCanvas.width = this.workingWidth;
+            this.workingCanvas.height = this.workingHeight;
             this.workingContext = this.workingCanvas.getContext("2d");
             
-            window.onresize = this.onresize.bind(this);
+            window.addEventListener('resize', this.resizeCanvas.bind(this), false);
         }
         
-        onresize() {
-            this.workingWidth = canvas.width;
-            this.workingHeight = canvas.height;
+        resizeCanvas() {
+            this.workingCanvas.width = window.innerWidth;
+            this.workingCanvas.height = window.innerHeight;
+
+            this.workingWidth = this.workingCanvas.width;
+            this.workingHeight = this.workingCanvas.height;
             this.clear();
         }
 
@@ -91,13 +97,44 @@ namespace Soft3D {
             }
 
             // Find the middle point between first & second point
-            var middlePoint = new Vector2(point0.x, point0.y).add(point1).scale(0.5);
+            let middlePoint = new Vector2(point0.x, point0.y).add(point1).scale(0.5);
             // We draw this point on screen
             this.drawPoint(middlePoint);
             // Recursive algorithm launched between first & middle point
             // and between middle & second point
             this.drawLine(point0, middlePoint);
             this.drawLine(middlePoint, point1);
+        }
+
+        public drawBline(point0: Vector2, point1: Vector2): void {
+            let x0 = point0.x >> 0;
+            let y0 = point0.y >> 0;
+            let x1 = point1.x >> 0;
+            let y1 = point1.y >> 0;
+            let dx = Math.abs(x1 - x0);
+            let dy = Math.abs(y1 - y0);
+            let sx = (x0 < x1) ? 1 : -1;
+            let sy = (y0 < y1) ? 1 : -1;
+            let err = dx - dy;
+
+            while(true) {
+                this.drawPoint(new Vector2(x0, y0));
+
+                if ((x0 == x1) && (y0 == y1)) 
+                    break;
+
+                let e2 = 2 * err;
+
+                if (e2 > -dy) { 
+                    err -= dy; 
+                    x0 += sx; 
+                }
+
+                if (e2 < dx) { 
+                    err += dx; 
+                    y0 += sy; 
+                }
+            }
         }
 
         // The main method of the engine that re-compute each vertex projection
@@ -119,24 +156,18 @@ namespace Soft3D {
 
                 var transformMatrix = projectionMatrix.multiply(viewMatrix).multiply(worldMatrix); //！！左乘
 
-                // for (var indexVertices = 0; indexVertices < cMesh.vertices.length; indexVertices++) {
-                //     // First, we project the 3D coordinates into the 2D space
-                //     var projectedPoint = this.project(cMesh.vertices[indexVertices], transformMatrix);
-                //     // Then we can draw on screen
-                //     this.drawPoint(projectedPoint);
-                // }
-                for (let i = 0; i < cMesh.indices.length; ++i) {
-                    var vertexA = cMesh.vertices[cMesh.indices[i]];
-                    var vertexB = cMesh.vertices[cMesh.indices[++i]];
-                    var vertexC = cMesh.vertices[cMesh.indices[++i]];
+                for (let i = 0; i < cMesh.indices.length;) {
+                    var vertexA = cMesh.vertices[cMesh.indices[i++]];
+                    var vertexB = cMesh.vertices[cMesh.indices[i++]];
+                    var vertexC = cMesh.vertices[cMesh.indices[i++]];
 
                     var pixelA = this.project(vertexA, transformMatrix);
                     var pixelB = this.project(vertexB, transformMatrix);
                     var pixelC = this.project(vertexC, transformMatrix);
 
-                    this.drawLine(pixelA, pixelB);
-                    this.drawLine(pixelB, pixelC);
-                    this.drawLine(pixelC, pixelA);
+                    this.drawBline(pixelA, pixelB);
+                    this.drawBline(pixelB, pixelC);
+                    this.drawBline(pixelC, pixelA);
                 }
             }
         }

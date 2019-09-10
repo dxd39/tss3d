@@ -69,14 +69,18 @@ var Soft3D;
     var Device = /** @class */ (function () {
         function Device(canvas) {
             this.workingCanvas = canvas;
-            this.workingWidth = canvas.width;
-            this.workingHeight = canvas.height;
+            this.workingWidth = window.innerWidth;
+            this.workingHeight = window.innerHeight;
+            this.workingCanvas.width = this.workingWidth;
+            this.workingCanvas.height = this.workingHeight;
             this.workingContext = this.workingCanvas.getContext("2d");
-            window.onresize = this.onresize.bind(this);
+            window.addEventListener('resize', this.resizeCanvas.bind(this), false);
         }
-        Device.prototype.onresize = function () {
-            this.workingWidth = canvas.width;
-            this.workingHeight = canvas.height;
+        Device.prototype.resizeCanvas = function () {
+            this.workingCanvas.width = window.innerWidth;
+            this.workingCanvas.height = window.innerHeight;
+            this.workingWidth = this.workingCanvas.width;
+            this.workingHeight = this.workingCanvas.height;
             this.clear();
         };
         // This function is called to clear the back buffer with a specific color
@@ -145,6 +149,31 @@ var Soft3D;
             this.drawLine(point0, middlePoint);
             this.drawLine(middlePoint, point1);
         };
+        Device.prototype.drawBline = function (point0, point1) {
+            var x0 = point0.x >> 0;
+            var y0 = point0.y >> 0;
+            var x1 = point1.x >> 0;
+            var y1 = point1.y >> 0;
+            var dx = Math.abs(x1 - x0);
+            var dy = Math.abs(y1 - y0);
+            var sx = (x0 < x1) ? 1 : -1;
+            var sy = (y0 < y1) ? 1 : -1;
+            var err = dx - dy;
+            while (true) {
+                this.drawPoint(new Soft3D.Vector2(x0, y0));
+                if ((x0 == x1) && (y0 == y1))
+                    break;
+                var e2 = 2 * err;
+                if (e2 > -dy) {
+                    err -= dy;
+                    x0 += sx;
+                }
+                if (e2 < dx) {
+                    err += dx;
+                    y0 += sy;
+                }
+            }
+        };
         // The main method of the engine that re-compute each vertex projection
         // during each frame
         Device.prototype.render = function (camera, meshes) {
@@ -160,22 +189,16 @@ var Soft3D;
                     .multiply(new Soft3D.Matrix4()
                     .setTranlate(cMesh.position.x, cMesh.position.y, cMesh.position.z));
                 var transformMatrix = projectionMatrix.multiply(viewMatrix).multiply(worldMatrix); //！！左乘
-                // for (var indexVertices = 0; indexVertices < cMesh.vertices.length; indexVertices++) {
-                //     // First, we project the 3D coordinates into the 2D space
-                //     var projectedPoint = this.project(cMesh.vertices[indexVertices], transformMatrix);
-                //     // Then we can draw on screen
-                //     this.drawPoint(projectedPoint);
-                // }
-                for (var i = 0; i < cMesh.indices.length; ++i) {
-                    var vertexA = cMesh.vertices[cMesh.indices[i]];
-                    var vertexB = cMesh.vertices[cMesh.indices[++i]];
-                    var vertexC = cMesh.vertices[cMesh.indices[++i]];
+                for (var i = 0; i < cMesh.indices.length;) {
+                    var vertexA = cMesh.vertices[cMesh.indices[i++]];
+                    var vertexB = cMesh.vertices[cMesh.indices[i++]];
+                    var vertexC = cMesh.vertices[cMesh.indices[i++]];
                     var pixelA = this.project(vertexA, transformMatrix);
                     var pixelB = this.project(vertexB, transformMatrix);
                     var pixelC = this.project(vertexC, transformMatrix);
-                    this.drawLine(pixelA, pixelB);
-                    this.drawLine(pixelB, pixelC);
-                    this.drawLine(pixelC, pixelA);
+                    this.drawBline(pixelA, pixelB);
+                    this.drawBline(pixelB, pixelC);
+                    this.drawBline(pixelC, pixelA);
                 }
             }
         };
@@ -270,7 +293,7 @@ var Soft3D;
         ///  0           0           -(f+n)/(f-n)   -2*f*n/(f-n)
         ///  0           0           -1             0
         Matrix4.prototype.setPerspective = function (fov, aspect, znear, zfar) {
-            var c = 1 / Math.tan(fov * Math.PI / 360);
+            var c = 1.0 / Math.tan(fov * Math.PI / 360);
             var a = aspect, f = zfar, n = znear;
             var m = this.data;
             m[0] = c / a;
@@ -555,8 +578,8 @@ function init() {
 function render() {
     device.clear();
     // rotating slightly the cube during each frame rendered
-    mesh.rotation.x += 0.1;
-    mesh.rotation.y += 0.1;
+    mesh.rotation.x += 0.01;
+    mesh.rotation.y += 0.01;
     // Doing the various matrix operations
     device.render(mera, meshes);
     // Flushing the back buffer into the front buffer

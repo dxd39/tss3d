@@ -48,8 +48,8 @@ function render() {
     device.clear();
 
     // rotating slightly the cube during each frame rendered
-    mesh.rotation.x += 0.1;
-    mesh.rotation.y += 0.1;
+    mesh.rotation.x += 0.01;
+    mesh.rotation.y += 0.01;
 
     // Doing the various matrix operations
     device.render(mera, meshes);

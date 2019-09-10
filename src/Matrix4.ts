@@ -91,7 +91,7 @@ module Soft3D {
         ///  0           0           -(f+n)/(f-n)   -2*f*n/(f-n)
         ///  0           0           -1             0
         setPerspective(fov: number, aspect: number, znear: number, zfar: number): Matrix4 {
-            let c = 1 / Math.tan(fov * Math.PI / 360);
+            let c = 1.0 / Math.tan(fov * Math.PI / 360);
             let a = aspect, f = zfar, n = znear;
 
             let m = this.data;
